@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Ops Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<style>
+  body {
+    margin: 0;
+    background: black;
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    grid-template-rows: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    color: white;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  /* LEFT COLUMN */
+  .widgets {
+    display: grid;
+    grid-template-rows: 1fr 2fr 2fr 1fr;
+    gap: 20px;
+    padding: 20px;
+    box-sizing: border-box;
+    height: 100%;
+  }
+
+  .widget {
+    background: #111;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .area-name { font-size: 28px; font-weight: 600; text-align: center; }
+  .time { font-size: 64px; font-weight: 700; text-align: center; }
+  .date { font-size: 24px; text-align: center; opacity: 0.85; }
+  .temp { font-size: 56px; text-align: center; }
+  .forecast { font-size: 22px; text-align: center; opacity: 0.85; }
+  .tomorrow { font-size: 22px; text-align: center; opacity: 0.85; }
+
+  /* RIGHT COLUMN */
+  .cams {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 20px;
+    height: 100%;
+    width: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+
+  .cam {
+    background: #111;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .cam video,
+  .cam iframe,
+  .cam img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 12px;
+  }
+
+  .label {
+    position: absolute;
+    bottom: 6px;
+    left: 6px;
+    background: rgba(0,0,0,0.6);
+    font-size: 14px;
+    padding: 3px 7px;
+    border-radius: 5px;
+    pointer-events: none;
+  }
+</style>
+</head>
+
+<body>
+
+  <!-- LEFT COLUMN -->
+  <div class="widgets">
+    <div class="widget">
+      <div class="area-name" id="area"></div>
+    </div>
+
+    <div class="widget">
+      <div class="time" id="time"></div>
+      <div class="date" id="date"></div>
+    </div>
+
+    <div class="widget">
+      <div class="temp" id="temp">--°F</div>
+      <div class="forecast" id="forecast">---</div>
+    </div>
+
+    <div class="widget">
+      <div class="tomorrow" id="tomorrow">Tomorrow: --° / --° — ---</div>
+    </div>
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div class="cams" id="cams"></div>
+
+<script>
+  const AREA_NAME = "Orrville, Ohio";
+  const LAT = 40.843;
+  const LON = -81.764;
+
+  document.getElementById('area').textContent = AREA_NAME;
+
+  /* =========================
+     CLOCK
+  ========================= */
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('time').textContent =
+      now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('date').textContent =
+      now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  /* =========================
+     OPEN-METEO WEATHER
+  ========================= */
+  async function fetchWeather() {
+    try {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&daily=temperature_2m_max,temperature_2m_min,weathercode&current_weather=true&timezone=America/New_York`;
+      const res = await fetch(url);
+      const data = await res.json();
+
+      // Current
+      const currentTemp = Math.round(data.current_weather.temperature * 9/5 + 32);
+      document.getElementById('temp').textContent = `${currentTemp}°F`;
+
+      // Current weather code → simple mapping
+      const code = data.current_weather.weathercode;
+      document.getElementById('forecast').textContent = weatherCodeToText(code);
+
+      // Tomorrow forecast
+      const tMax = Math.round(data.daily.temperature_2m_max[1] * 9/5 + 32);
+      const tMin = Math.round(data.daily.temperature_2m_min[1] * 9/5 + 32);
+      const tCode = data.daily.weathercode[1];
+      document.getElementById('tomorrow').textContent =
+        `Tomorrow: ${tMax}° / ${tMin}° — ${weatherCodeToText(tCode)}`;
+
+    } catch(err) {
+      console.error("Weather fetch failed:", err);
+    }
+  }
+
+  // Simple weather code mapping (Open-Meteo)
+  function weatherCodeToText(code) {
+    const mapping = {
+      0: "Clear sky",
+      1: "Mainly clear",
+      2: "Partly cloudy",
+      3: "Overcast",
+      45: "Fog",
+      48: "Depositing rime fog",
+      51: "Drizzle: Light",
+      53: "Drizzle: Moderate",
+      55: "Drizzle: Dense",
+      56: "Freezing drizzle: Light",
+      57: "Freezing drizzle: Dense",
+      61: "Rain: Slight",
+      63: "Rain: Moderate",
+      65: "Rain: Heavy",
+      66: "Freezing rain: Light",
+      67: "Freezing rain: Heavy",
+      71: "Snow fall: Slight",
+      73: "Snow fall: Moderate",
+      75: "Snow fall: Heavy",
+      77: "Snow grains",
+      80: "Rain showers: Slight",
+      81: "Rain showers: Moderate",
+      82: "Rain showers: Violent",
+      85: "Snow showers slight",
+      86: "Snow showers heavy",
+      95: "Thunderstorm",
+      96: "Thunderstorm with hail",
+      99: "Thunderstorm with heavy hail"
+    };
+    return mapping[code] || "Unknown";
+  }
+
+  fetchWeather();
+
+  /* =========================
+     CAMS
+  ========================= */
+  const CAMS = [
+    { name: "Orrville Live", type: "gif", url: "https://itscameras.dot.state.oh.us/images/D03/US-30_SR-57.jpg", refresh: 60000 },
+    { name: "Dalton Live", type: "gif", url: "https://itscameras.dot.state.oh.us:443/images/D03/US-30_SR-94.jpg", refresh: 60000 },
+    { name: "CLE Radar", type: "gif", url: "https://radar.weather.gov/ridge/standard/KCLE_loop.gif" },
+    { name: "Satellite", type: "gif", url: "https://cdn.star.nesdis.noaa.gov/GOES19/ABI/SECTOR/cgl/GEOCOLOR/GOES19-CGL-GEOCOLOR-600x600.gif" },
+    { name: "Wind", type: "iframe", url: "https://embed.windy.com/embed.html?type=map&overlay=wind&lat=40.789&lon=-81.76&zoom=10&message=false" },
+    { name: "Flight Data", type: "iframe", url: "https://globe.adsbexchange.com/?lat=40.789&lon=-81.76&zoom=10&menu=0" },
+  ];
+
+  const camContainer = document.getElementById('cams');
+
+  CAMS.forEach(cam => {
+    const div = document.createElement('div');
+    div.className = 'cam';
+
+    if (cam.type === 'gif') {
+      const img = document.createElement('img');
+      img.src = cam.url + '?t=' + Date.now();
+      div.appendChild(img);
+    } else if (cam.type === 'iframe') {
+      const iframe = document.createElement('iframe');
+      iframe.src = cam.url;
+      iframe.allow = "autoplay; fullscreen";
+      div.appendChild(iframe);
+    }
+
+    const label = document.createElement('div');
+    label.className = 'label';
+    label.textContent = cam.name;
+    div.appendChild(label);
+
+    camContainer.appendChild(div);
+  });
+
+  setInterval(() => location.reload(), 5 * 60 * 1000);
+</script>
+
+</body>
+</html>
