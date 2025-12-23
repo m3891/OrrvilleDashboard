@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Dashboard</title>
+<title>Orrville</title>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
 <style>
@@ -18,7 +18,6 @@
     font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   }
 
-  /* LEFT COLUMN */
   .widgets {
     display: grid;
     grid-template-rows: 1fr 2fr 2fr 2fr 2fr;
@@ -38,31 +37,11 @@
     align-items: center;
   }
 
-  .area-name {
-    font-size: 28px;
-    font-weight: 600;
-    text-align: center;
-  }
-
-  .time {
-    font-size: 64px;
-    font-weight: 700;
-    text-align: center;
-  }
-
-  .date {
-    font-size: 24px;
-    opacity: 0.85;
-  }
-
-  .temp {
-    font-size: 56px;
-  }
-
-  .forecast {
-    font-size: 22px;
-    opacity: 0.85;
-  }
+  .area-name { font-size: 28px; font-weight: 600; }
+  .time { font-size: 64px; font-weight: 700; }
+  .date { font-size: 24px; opacity: 0.85; }
+  .temp { font-size: 56px; }
+  .forecast { font-size: 22px; opacity: 0.85; }
 
   #forecast3 {
     font-size: 20px;
@@ -82,14 +61,12 @@
     font-weight: 600;
   }
 
-  /* RIGHT COLUMN */
   .cams {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     grid-template-rows: repeat(3, 1fr);
     gap: 20px;
     height: 100%;
-    width: 100%;
     padding: 20px;
     box-sizing: border-box;
   }
@@ -127,49 +104,23 @@
 
 <body>
 
-<!-- LEFT COLUMN -->
 <div class="widgets">
-
-  <div class="widget">
-    <div class="area-name" id="area"></div>
-  </div>
-
-  <div class="widget">
-    <div class="time" id="time"></div>
-    <div class="date" id="date"></div>
-  </div>
-
-  <div class="widget">
-    <div class="temp" id="temp">--°F</div>
-    <div class="forecast" id="forecast">---</div>
-  </div>
-
-  <div class="widget">
-    <div id="forecast3">---</div>
-  </div>
-
-  <div class="widget">
-    <div id="alerts">Checking alerts…</div>
-  </div>
-
+  <div class="widget"><div class="area-name" id="area"></div></div>
+  <div class="widget"><div class="time" id="time"></div><div class="date" id="date"></div></div>
+  <div class="widget"><div class="temp" id="temp">--°F</div><div class="forecast" id="forecast">---</div></div>
+  <div class="widget"><div id="forecast3">---</div></div>
+  <div class="widget"><div id="alerts">Checking alerts…</div></div>
 </div>
 
-<!-- RIGHT COLUMN -->
 <div class="cams" id="cams"></div>
 
 <script>
-/* =========================
-   CONFIG
-========================= */
-const AREA_NAME = "Orrville, Ohio";
-const LAT = 40.843;
-const LON = -81.764;
-
+const AREA_NAME = "Orrville, OH";
+const LAT = 40.789;
+const LON = -81.760;
 document.getElementById('area').textContent = AREA_NAME;
 
-/* =========================
-   CLOCK
-========================= */
+/* CLOCK */
 function updateClock() {
   const now = new Date();
   document.getElementById('time').textContent =
@@ -180,28 +131,22 @@ function updateClock() {
 updateClock();
 setInterval(updateClock, 1000);
 
-/* =========================
-   WEATHER + ALERTS
-========================= */
+/* WEATHER */
 async function fetchWeather() {
   try {
     const url =
       `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}` +
-      `&current_weather=true` +
-      `&daily=temperature_2m_max,temperature_2m_min,weathercode` +
-      `&alerts=true` +
+      `&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode` +
       `&timezone=America/New_York`;
 
     const res = await fetch(url);
     const data = await res.json();
 
-    // Current
     const tempF = Math.round(data.current_weather.temperature * 9/5 + 32);
     document.getElementById('temp').textContent = `${tempF}°F`;
     document.getElementById('forecast').textContent =
       weatherCodeToText(data.current_weather.weathercode);
 
-    // 3-day forecast
     const f = [];
     for (let i = 1; i <= 3; i++) {
       const d = new Date(data.daily.time[i]).toLocaleDateString([], { weekday: 'short' });
@@ -210,17 +155,29 @@ async function fetchWeather() {
       f.push(`${d}: ${hi}° / ${lo}° — ${weatherCodeToText(data.daily.weathercode[i])}`);
     }
     document.getElementById('forecast3').innerHTML = f.join("<br>");
+  } catch (err) {
+    console.error(err);
+  }
+}
 
-    // Alerts
-    const alertsEl = document.getElementById('alerts');
-    if (data.alerts && data.alerts.length > 0) {
-      alertsEl.innerHTML = `<span class="alert-active">${data.alerts[0].event}</span>`;
+/* ALERTS */
+async function fetchAlerts() {
+  const alertsEl = document.getElementById('alerts');
+  try {
+    const res = await fetch(
+      `https://api.weather.gov/alerts/active?point=${LAT},${LON}`,
+      { headers: { "Accept": "application/geo+json" } }
+    );
+    const data = await res.json();
+
+    if (data.features?.length) {
+      alertsEl.innerHTML =
+        `<span class="alert-active">${data.features[0].properties.event}</span>`;
     } else {
       alertsEl.textContent = "No Active Weather Alerts";
     }
-
-  } catch (err) {
-    console.error(err);
+  } catch {
+    alertsEl.textContent = "No Active Weather Alerts";
   }
 }
 
@@ -268,12 +225,10 @@ function weatherCodeToText(code) {
   return map[code] ?? `Code ${code}`;
 }
 
-
 fetchWeather();
+fetchAlerts();
 
-/* =========================
-   CAMS
-========================= */
+/* CAMS */
 const CAMS = [
   { name: "Orrville Live", type: "gif", url: "https://itscameras.dot.state.oh.us/images/D03/US-30_SR-57.jpg" },
   { name: "Dalton Live", type: "gif", url: "https://itscameras.dot.state.oh.us/images/D03/US-30_SR-94.jpg" },
@@ -296,19 +251,27 @@ CAMS.forEach(cam => {
   } else if (cam.type === 'iframe') {
     const iframe = document.createElement('iframe');
     iframe.src = cam.url;
-    iframe.allow = "autoplay; fullscreen";
     div.appendChild(iframe);
+  } else {
+    const video = document.createElement('video');
+    video.autoplay = video.muted = video.playsInline = true;
+    if (Hls.isSupported()) {
+      const hls = new Hls();
+      hls.loadSource(cam.hlsUrl);
+      hls.attachMedia(video);
+    } else {
+      video.src = cam.hlsUrl;
+    }
+    div.appendChild(video);
   }
 
   const label = document.createElement('div');
   label.className = 'label';
   label.textContent = cam.name;
   div.appendChild(label);
-
   camContainer.appendChild(div);
 });
 
-/* Safety refresh */
 setInterval(() => location.reload(), 5 * 60 * 1000);
 </script>
 
