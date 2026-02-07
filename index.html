@@ -2,277 +2,365 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Orrville</title>
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Orrville Display</title>
 
 <style>
-  body {
-    margin: 0;
-    background: black;
-    display: grid;
-    grid-template-columns: 1fr 2fr;
-    grid-template-rows: 100vh;
-    width: 100vw;
-    overflow: hidden;
-    color: white;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  }
+:root {
+  --theme: 0;
+  --ui-scale: 1.4;
+}
 
-  .widgets {
-    display: grid;
-    grid-template-rows: 1fr 2fr 2fr 2fr 2fr;
-    gap: 20px;
-    padding: 20px;
-    box-sizing: border-box;
-    height: 100%;
-  }
+:root {
+  --bg: color-mix(in srgb,
+    #f5f6f8 calc((1 - var(--theme)) * 100%),
+    #0b0b0d calc(var(--theme) * 100%)
+  );
+  --card: color-mix(in srgb,
+    rgba(255,255,255,0.85) calc((1 - var(--theme)) * 100%),
+    rgba(28,28,30,0.9) calc(var(--theme) * 100%)
+  );
+  --text: color-mix(in srgb,
+    #111 calc((1 - var(--theme)) * 100%),
+    #fff calc(var(--theme) * 100%)
+  );
+  --muted: color-mix(in srgb,
+    rgba(0,0,0,0.65) calc((1 - var(--theme)) * 100%),
+    rgba(255,255,255,0.65) calc(var(--theme) * 100%)
+  );
+  --alert: #ff453a;
+}
 
-  .widget {
-    background: #111;
-    border-radius: 12px;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-  }
+html, body {
+  margin: 0;
+  width: 100vw;
+  height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  overflow: hidden;
+}
 
-  .area-name { font-size: 28px; font-weight: 600; }
-  .time { font-size: 64px; font-weight: 700; }
-  .date { font-size: 24px; opacity: 0.85; }
-  .temp { font-size: 56px; }
-  .forecast { font-size: 22px; opacity: 0.85; }
+.main {
+  display: grid;
+  grid-template-columns: 1fr 1.3fr 1fr;
+  gap: 2%;
+  padding: 2%;
+  height: 100%;
+  box-sizing: border-box;
+  align-content: stretch;
+}
 
-  #forecast3 {
-    font-size: 20px;
-    line-height: 1.4;
-    text-align: center;
-    opacity: 0.9;
-  }
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 2%;
+  flex-grow: 1;
+  justify-content: space-evenly;
+}
 
-  #alerts {
-    font-size: 18px;
-    text-align: center;
-    line-height: 1.4;
-  }
+.card {
+  background: var(--card);
+  border-radius: 2vw;
+  padding: 1.5%;
+  backdrop-filter: blur(1vw);
+  box-shadow: 0 1vw 2vw rgba(0,0,0,0.12);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  flex-grow: 1; /* evenly distribute vertical space */
+}
 
-  .alert-active {
-    color: #ff5555;
-    font-weight: 600;
-  }
+.imageFrame {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 1.5vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-  .cams {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: repeat(3, 1fr);
-    gap: 20px;
-    height: 100%;
-    padding: 20px;
-    box-sizing: border-box;
-  }
+.imageFrame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
-  .cam {
-    background: #111;
-    border-radius: 12px;
-    overflow: hidden;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+.city {
+  font-size: calc(4rem * var(--ui-scale));
+  font-weight: 700;
+}
 
-  .cam video,
-  .cam iframe,
-  .cam img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
+.time {
+  font-size: calc(6rem * var(--ui-scale));
+  font-weight: 800;
+  margin-top: 10px;
+}
 
-  .label {
-    position: absolute;
-    bottom: 6px;
-    left: 6px;
-    background: rgba(0,0,0,0.6);
-    font-size: 14px;
-    padding: 3px 7px;
-    border-radius: 5px;
-    pointer-events: none;
-  }
+.date {
+  font-size: calc(2rem * var(--ui-scale));
+  color: var(--muted);
+  margin-top: 10px;
+}
+
+.big {
+  font-size: calc(3rem * var(--ui-scale));
+  font-weight: 700;
+}
+
+#sunriseTime,
+#sunsetTime {
+  font-size: calc(1.5rem * var(--ui-scale));
+  font-weight: 600;
+}
+
+.sunLabel {
+  font-size: calc(2rem * var(--ui-scale));
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.sunTime {
+  font-size: calc(2.4rem * var(--ui-scale));
+  font-weight: 700;
+  margin-top: 0.3em;
+}
+
+#forecast3 {
+  font-size: calc(1.5rem * var(--ui-scale)); /* 3-Day Forecast Font Size */
+  font-weight: 600;
+}
+
+.sunEvent {
+  text-align: center;
+}
+
+#temp {
+  font-size: calc(3.6rem * var(--ui-scale));
+}
+
+.alert {
+  color: var(--alert);
+  font-weight: 700;
+  font-size: calc(1.7rem * var(--ui-scale)); /* adjust 2rem as desired */
+}
+
+.card.image-card {
+  padding: 0;
+  overflow: hidden;
+  border-radius: 2vw;
+
+  /* 🔑 limit size so it can’t take over */
+  max-height: 22vh;
+  height: 22vh;
+}
+
+.card.image-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+
+/* Ensure other images fit within cards */
+img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 1.5vw;
+}
 </style>
 </head>
 
 <body>
 
-<div class="widgets">
-  <div class="widget"><div class="area-name" id="area"></div></div>
-  <div class="widget"><div class="time" id="time"></div><div class="date" id="date"></div></div>
-  <div class="widget"><div class="temp" id="temp">--°F</div><div class="forecast" id="forecast">---</div></div>
-  <div class="widget"><div id="forecast3">---</div></div>
-  <div class="widget"><div id="alerts">Checking alerts…</div></div>
+<div class="main">
+
+  <!-- LEFT COLUMN -->
+  <div class="column">
+<div style="display:grid; grid-template-columns: 1fr 1fr; gap: 2%;">
+<div class="card">
+  <div class="sunLabel">Sunrise</div>
+  <div class="sunTime" id="sunriseTime">—</div>
 </div>
 
-<div class="cams" id="cams"></div>
+<div class="card">
+  <div class="sunLabel">Sunset</div>
+  <div class="sunTime" id="sunsetTime">—</div>
+</div>
+</div>
+
+    <div class="card">
+      <div id="forecast3">---</div>
+    </div>
+
+<div class="card image-card">
+  <img
+    id="radarImg"
+    src="https://radar.weather.gov/ridge/standard/KCLE_loop.gif"
+    alt="Weather Radar">
+</div>
+  </div>
+
+  <!-- CENTER COLUMN -->
+  <div class="column">
+    <div class="card">
+      <div class="big" id="temp">--°F</div>
+      <div id="forecast">---</div>
+    </div>
+
+    <div class="card">
+      <div class="city">Orrville, OH</div>
+      <div class="time" id="localTime"></div>
+      <div class="date" id="localDate"></div>
+    </div>
+
+    <div class="card">
+      <div class="big" id="moonPhase">—</div>
+    </div>
+  </div>
+
+  <!-- RIGHT COLUMN -->
+  <div class="column">
+    <div class="card">
+      <div class="big" id="utcTime"></div>
+    </div>
+
+    <div class="card">
+      <div id="alerts">Checking…</div>
+    </div>
+
+<div class="card image-card">
+  <img
+    id="trafficCam"
+    src="https://itscameras.dot.state.oh.us/images/D03/US-30_SR-57.jpg"
+    alt="Traffic Camera">
+</div>
+
+  </div>
+
+</div>
 
 <script>
-const AREA_NAME = "Orrville, OH";
 const LAT = 40.789;
 const LON = -81.760;
-document.getElementById('area').textContent = AREA_NAME;
+const radarImg   = document.getElementById("radarImg");
+const trafficCam = document.getElementById("trafficCam");
+const alerts     = document.getElementById("alerts");
+const sunriseTime = document.getElementById("sunriseTime");
+const sunsetTime  = document.getElementById("sunsetTime");
 
-/* CLOCK */
-function updateClock() {
+function updateTime() {
   const now = new Date();
-  document.getElementById('time').textContent =
-    now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  document.getElementById('date').textContent =
-    now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+  localTime.textContent = now.toLocaleTimeString([], { hour:'numeric', minute:'2-digit' });
+  localDate.textContent = now.toLocaleDateString([], { weekday:'long', month:'long', day:'numeric' });
+  utcTime.textContent = now.toISOString().substring(11,16) + " UTC";
 }
-updateClock();
-setInterval(updateClock, 1000);
+updateTime();
+setInterval(updateTime, 1000);
 
-/* WEATHER */
 async function fetchWeather() {
-  try {
-    const url =
-      `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}` +
-      `&current_weather=true&daily=temperature_2m_max,temperature_2m_min,weathercode` +
-      `&timezone=America/New_York`;
+  const res = await fetch(
+    `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}` +
+    `&current_weather=true` +
+    `&daily=temperature_2m_max,temperature_2m_min,weathercode,sunrise,sunset` +
+    `&timezone=America/New_York`
+  );
+  const data = await res.json();
 
-    const res = await fetch(url);
-    const data = await res.json();
+  temp.textContent = Math.round(data.current_weather.temperature * 9/5 + 32) + "°F";
+  forecast.textContent = weatherCodeToText(data.current_weather.weathercode);
 
-    const tempF = Math.round(data.current_weather.temperature * 9/5 + 32);
-    document.getElementById('temp').textContent = `${tempF}°F`;
-    document.getElementById('forecast').textContent =
-      weatherCodeToText(data.current_weather.weathercode);
+  forecast3.innerHTML = data.daily.time.slice(1,4).map((d,i) => {
+    const hi = Math.round(data.daily.temperature_2m_max[i+1]*9/5+32);
+    const lo = Math.round(data.daily.temperature_2m_min[i+1]*9/5+32);
+    return `${new Date(d).toLocaleDateString([], {weekday:'short'})}: ${hi}° / ${lo}°`;
+  }).join("<br>");
 
-    const f = [];
-    for (let i = 1; i <= 3; i++) {
-      const d = new Date(data.daily.time[i]).toLocaleDateString([], { weekday: 'short' });
-      const hi = Math.round(data.daily.temperature_2m_max[i] * 9/5 + 32);
-      const lo = Math.round(data.daily.temperature_2m_min[i] * 9/5 + 32);
-      f.push(`${d}: ${hi}° / ${lo}° — ${weatherCodeToText(data.daily.weathercode[i])}`);
-    }
-    document.getElementById('forecast3').innerHTML = f.join("<br>");
-  } catch (err) {
-    console.error(err);
-  }
+const rise = new Date(data.daily.sunrise[0]).toLocaleTimeString([], {
+  hour: 'numeric',
+  minute: '2-digit'
+});
+const set = new Date(data.daily.sunset[0]).toLocaleTimeString([], {
+  hour: 'numeric',
+  minute: '2-digit'
+});
+
+sunriseTime.textContent = rise;
+sunsetTime.textContent  = set;
+
 }
 
-/* ALERTS */
 async function fetchAlerts() {
-  const alertsEl = document.getElementById('alerts');
   try {
     const res = await fetch(
       `https://api.weather.gov/alerts/active?point=${LAT},${LON}`,
-      { headers: { "Accept": "application/geo+json" } }
+      { headers:{ Accept:"application/geo+json" } }
     );
     const data = await res.json();
-
-    if (data.features?.length) {
-      alertsEl.innerHTML =
-        `<span class="alert-active">${data.features[0].properties.event}</span>`;
-    } else {
-      alertsEl.textContent = "No Active Weather Alerts";
-    }
+if (data.features?.length) {
+  alerts.innerHTML = data.features
+    .map(f => `<span class="alert">${f.properties.event}</span>`)
+    .join("<br>");
+} else {
+  alerts.textContent = "No Active Weather Alerts";
+}
   } catch {
-    alertsEl.textContent = "No Active Weather Alerts";
+    alerts.textContent = "No Active Weather Alerts";
   }
 }
 
-function weatherCodeToText(code) {
-  const map = {
-    0: "Clear Sky",
-    1: "Mainly Clear",
-    2: "Partly Cloudy",
-    3: "Overcast",
+function refreshRadar() {
+  if (!radarImg) return;
+  radarImg.src = "";
+  radarImg.src =
+    "https://radar.weather.gov/ridge/standard/KCLE_loop.gif?ts=" + Date.now();
+}
 
-    45: "Fog",
-    48: "Rime Fog",
+function refreshCam() {
+  const img = document.getElementById("trafficCam");
+  if (!img) return;
 
-    51: "Light Drizzle",
-    53: "Moderate Drizzle",
-    55: "Dense Drizzle",
+  // Force reload even if the browser cached an error frame
+  img.src = "";
+  img.src =
+    "https://itscameras.dot.state.oh.us/images/D03/US-30_SR-57.jpg?ts=" + Date.now();
+}
 
-    56: "Freezing Drizzle (Light)",
-    57: "Freezing Drizzle (Dense)",
+function updateMoonPhase() {
+  const synodicMonth = 29.53058867;
+  const knownNewMoon = new Date(Date.UTC(2000,0,6,18,14));
+  const days = (Date.now() - knownNewMoon) / 86400000;
+  const phase = (days % synodicMonth) / synodicMonth;
 
-    61: "Light Rain",
-    63: "Moderate Rain",
-    65: "Heavy Rain",
+  const phases = [
+    "New Moon","Waxing Crescent","First Quarter","Waxing Gibbous",
+    "Full Moon","Waning Gibbous","Last Quarter","Waning Crescent"
+  ];
 
-    66: "Freezing Rain (Light)",
-    67: "Freezing Rain (Heavy)",
+  moonPhase.textContent = phases[Math.floor(phase * 8) % 8];
+}
 
-    71: "Light Snow",
-    73: "Moderate Snow",
-    75: "Heavy Snow",
-    77: "Snow Grains",
-
-    80: "Rain Showers (Light)",
-    81: "Rain Showers (Moderate)",
-    82: "Rain Showers (Violent)",
-
-    85: "Snow Showers (Light)",
-    86: "Snow Showers (Heavy)",
-
-    95: "Thunderstorm",
-    96: "Thunderstorm w/ Hail",
-    99: "Severe Thunderstorm w/ Hail"
-  };
-
-  return map[code] ?? `Code ${code}`;
+function weatherCodeToText(c) {
+  return {
+    0:"Clear Sky",1:"Mostly Clear",2:"Partly Cloudy",3:"Overcast",
+    61:"Rain",71:"Snow",95:"Thunderstorms"
+  }[c] ?? "—";
 }
 
 fetchWeather();
 fetchAlerts();
+updateMoonPhase();
 
-/* CAMS */
-const CAMS = [
-  { name: "Orrville Live", type: "gif", url: "https://itscameras.dot.state.oh.us/images/D03/US-30_SR-57.jpg" },
-  { name: "Dalton Live", type: "gif", url: "https://itscameras.dot.state.oh.us/images/D03/US-30_SR-94.jpg" },
-  { name: "CLE Radar", type: "gif", url: "https://radar.weather.gov/ridge/standard/KCLE_loop.gif" },
-  { name: "Satellite", type: "gif", url: "https://cdn.star.nesdis.noaa.gov/GOES19/ABI/SECTOR/cgl/GEOCOLOR/GOES19-CGL-GEOCOLOR-600x600.gif" },
-  { name: "Wind", type: "iframe", url: "https://embed.windy.com/embed.html?type=map&overlay=wind&lat=40.789&lon=-81.76&zoom=10&message=false" },
-  { name: "Flight Data", type: "iframe", url: "https://globe.adsbexchange.com/?lat=40.789&lon=-81.76&zoom=10&menu=0" }
-];
-
-const camContainer = document.getElementById('cams');
-
-CAMS.forEach(cam => {
-  const div = document.createElement('div');
-  div.className = 'cam';
-
-  if (cam.type === 'gif') {
-    const img = document.createElement('img');
-    img.src = cam.url + '?t=' + Date.now();
-    div.appendChild(img);
-  } else if (cam.type === 'iframe') {
-    const iframe = document.createElement('iframe');
-    iframe.src = cam.url;
-    div.appendChild(iframe);
-  } else {
-    const video = document.createElement('video');
-    video.autoplay = video.muted = video.playsInline = true;
-    if (Hls.isSupported()) {
-      const hls = new Hls();
-      hls.loadSource(cam.hlsUrl);
-      hls.attachMedia(video);
-    } else {
-      video.src = cam.hlsUrl;
-    }
-    div.appendChild(video);
-  }
-
-  const label = document.createElement('div');
-  label.className = 'label';
-  label.textContent = cam.name;
-  div.appendChild(label);
-  camContainer.appendChild(div);
-});
-
-setInterval(() => location.reload(), 5 * 60 * 1000);
+setInterval(fetchWeather, 10 * 60 * 1000);
+setInterval(fetchAlerts, 10 * 60 * 1000);
+setInterval(updateMoonPhase, 60 * 60 * 1000);
+setInterval(refreshRadar, 5 * 60 * 1000); // radar every 5 min
+setInterval(refreshCam,   2 * 60 * 1000); // camera every 2 min
+setTimeout(() => location.reload(), 24 * 60 * 60 * 1000);
 </script>
 
 </body>
